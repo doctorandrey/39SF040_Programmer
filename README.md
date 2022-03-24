@@ -2,9 +2,9 @@
 ##### SST39SF010A/020A/040 Arduino Mega Programmer
 Based on the code of 39SF040 / 39SF020A Programmer by Bob Szymanski Published 9/24/2015.
 
-Pinout should be used according to the pins as defined in the source file. SD card pinout is as provided by Arduino, on pins 51-53.
+Connect Flash to Arduino mega according to the pins as defined in the source file. SD card pinout is as provided by Arduino, on pins 51-53.
  
-Based on Arduino Mega 2650. Serial terminal speed 57600.
+Based on Arduino Mega 2650 and Standard SD Shield. Serial terminal speed 57600.
 
 Quick serial commands manual:
 
@@ -33,3 +33,5 @@ ETF FIRMWARE.ROM 0x10000 0x8000   - Writes EEPROM data starting from 0x10000 and
 *(ETF stands for Eeprom To File, FTE - File To Eeprom, etc.)*
 
 ![Example workflow](https://github.com/doctorandrey/39SF040_Programmer/blob/6d708868ea0c198c6b744fc6fe6072bf5909737e/EEPROM_Prg.png)
+
+Dependencies: https://github.com/ppedro74/Arduino-SerialCommands @ppedro74
