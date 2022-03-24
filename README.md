@@ -32,4 +32,4 @@ ETF FIRMWARE.ROM 0x10000 0x8000   - Writes EEPROM data starting from 0x10000 and
 
 *(ETF stands for Eeprom To File, FTE - File To Eeprom, etc.)*
 
-![This is an image](https://myoctocat.com/assets/images/base-octocat.svg)
+![Example workflow](https://github.com/doctorandrey/39SF040_Programmer/blob/6d708868ea0c198c6b744fc6fe6072bf5909737e/EEPROM_Prg.png)
