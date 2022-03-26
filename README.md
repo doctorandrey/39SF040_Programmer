@@ -1,5 +1,5 @@
-#  39SF010A/020A/040 Programmer
-##### SST39SF010A/020A/040 Arduino Mega Programmer
+#  39SFXXX and 29C011 Programmer
+##### SST39SF010A/020A/040 and W29F011 Arduino Mega Programmer
 Based on the code of 39SF040 / 39SF020A Programmer by Bob Szymanski Published 9/24/2015.
 
 Connect Flash to Arduino mega according to the pins as defined in the source file. SD card pinout is as provided by Arduino, on pins 51-53.
