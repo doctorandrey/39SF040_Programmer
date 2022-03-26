@@ -16,18 +16,13 @@
 #define SST_ID        0xBF    /* SST Manufacturer's ID code   */
 #define SST_39SF040   0xB7    /* SST 39SF040 device code      */
 
+#define PAGE_SIZE     128
+#define WB_ID         0xDA    /* Winbond Manufacturer's ID code   */
+#define WB_29C011     0xC1    /* W29C011 device code      */
+
 #define _WE A8 
 #define _OE A9 
 #define _CE A10 
-
-//#define ADDR1 0x5555
-//#define DATA1 0xAA
-
-//#define ADDR2 0x2AAA
-//#define DATA2 0x55
-
-//#define ADDR3 0x5555
-//#define DATA3 0xA0
 
 #define D0 22 
 #define D1 23 
@@ -59,9 +54,6 @@
 #define ADR18 A11
 
 #define SD_SS_PIN 53
-
-#define LED_GREEN 48
-#define LED_RED 49
 
 bool SD_OK = true;
 
@@ -300,10 +292,10 @@ void cmd_erase_chip(SerialCommands* sender)
 
 void cmd_chip_id(SerialCommands* sender)
 {
-  signalsState("ID_BEG");
+  sender->GetSerial()->print("EEPROM Manufacturer ID: 0x");
+  sender->GetSerial()->println(getHwID(0), HEX);
   sender->GetSerial()->print("EEPROM Chip ID: 0x");
-  sender->GetSerial()->println(getChipID(), HEX);
-  signalsState("ID_END");
+  sender->GetSerial()->println(getHwID(1), HEX);
 }
 
 void cmd_dump(SerialCommands* sender)
@@ -398,32 +390,61 @@ void cmd_file_to_eeprom(SerialCommands* sender)
 
 unsigned long fileToEeprom(String fileName, unsigned long address)
 { 
+  byte data_arr[PAGE_SIZE];
   int datum = 0;
   unsigned long addressCount = 0;
+  unsigned long bytesCount = 0;
   File sourceFile = SD.open(fileName);
   delay(500);
   if (!sourceFile)
   {
     Serial.println("Error reading ROM file!");
   }
+  byte chip_id = getHwID(1);
+  Serial.print("Chip ID: 0x");
+  Serial.println(chip_id, HEX);
   Serial.print("Writing to EEPROM address: 0x");
   Serial.println(address, HEX);
-  while (true)
+
+  if (chip_id == SST_39SF040)
   {
-    datum = sourceFile.read();
-    if (datum < 0) { break; } 
-    programByte(address, datum);
-    addressCount++;
-    address++;
-    delayMicroseconds(30);
-    if (address % 1024 == 0) {
-      Serial.print("|");
-    }  
+    while (true)
+    {
+      datum = sourceFile.read();
+      if (datum < 0) { break; } 
+      programByte(address, datum);
+      addressCount++;
+      address++;
+      bytesCount++;
+      delayMicroseconds(30);
+      if (address % 1024 == 0) {
+        Serial.print("|");
+      }  
+    }
+  } else if (chip_id == WB_29C011)
+  {
+    while (true)
+    {
+      datum = sourceFile.read();
+      if (datum < 0) { break; } 
+      bytesCount++;
+      data_arr[addressCount] = datum;
+      addressCount++;
+      if ((addressCount % PAGE_SIZE == 0) && (addressCount > 0)) {  
+        programPage(address, &data_arr[0]);
+        addressCount = 0;
+        address++;
+      } 
+      if (bytesCount % 1024 == 0) {
+        Serial.print("|");
+      }  
+    }
   }
   Serial.println("");
   sourceFile.close();
-  return addressCount;
+  return bytesCount;
 }
+
 
 void eepromToSerial(unsigned long offset, unsigned long dataLen)
 {
@@ -445,7 +466,7 @@ void eepromToSerial(unsigned long offset, unsigned long dataLen)
     datum = 0;
     writeAddress(offset);
     delayMicroseconds(5);
-    datum = DigitalReadByte();
+    datum = digitalReadByte();
     if (datum < 16){
       datum_str = "0" + String(datum, HEX);  
     } else {
@@ -496,7 +517,7 @@ void eepromToFile(String fileName, unsigned long offset, unsigned long dataLen)
     datum = 0x00;
     writeAddress(offset);
     delayMicroseconds(5);
-    datum = DigitalReadByte();
+    datum = digitalReadByte();
     copyFile.write(datum);
     delayMicroseconds(5);
     offset++;
@@ -588,7 +609,7 @@ void setWriteMode()
   delay(1);
 }
 
-void writeAddress(long value)
+void writeAddress(unsigned long value)
 {
   digitalWrite(ADR0, (value >> 0) & 0x01);
   digitalWrite(ADR1, (value >> 1) & 0x01);
@@ -611,7 +632,7 @@ void writeAddress(long value)
   digitalWrite(ADR18, (value >> 18) & 0x01);
 }
 
-unsigned int DigitalReadByte()
+unsigned int digitalReadByte()
 {
   unsigned int toReturn = 0x00;
   if (digitalRead(D0) == HIGH) {bitSet(toReturn, 0); } else { bitClear(toReturn, 0); }   
@@ -638,7 +659,7 @@ void writeData(unsigned int value)
   delayMicroseconds(5); 
 }
 
-void programByte(long address, unsigned int data)
+void softProtect()
 {
   digitalWrite(_OE, HIGH);
   digitalWrite(_WE, HIGH);
@@ -664,14 +685,62 @@ void programByte(long address, unsigned int data)
   writeData(0xA0); 
   digitalWrite(_WE, LOW);
   digitalWrite(_WE, HIGH);
- 
+}
+
+void programByte(unsigned long address, unsigned int data)
+{
+  softProtect();
   writeAddress(address);
   writeData(data);
   digitalWrite(_WE, LOW);
   digitalWrite(_WE, HIGH);
 }
 
-byte getChipID()
+//W29C011
+
+void programPage(unsigned long address, byte *data_arr){
+  softProtect();
+  writeHiNibble(address);
+  int i;
+  for(i = 0; i < PAGE_SIZE; i++){
+    writeLoNibble(i);
+    digitalWrite(_WE, HIGH);
+    digitalWrite(_WE, LOW);
+    writeData(data_arr[i]);
+    digitalWrite(_WE, HIGH);
+    address++;
+  }
+  delayMicroseconds(300);
+}
+
+void writeLoNibble(unsigned long value)
+{
+  digitalWrite(ADR0, (value >> 0) & 0x01);
+  digitalWrite(ADR1, (value >> 1) & 0x01);
+  digitalWrite(ADR2, (value >> 2) & 0x01);
+  digitalWrite(ADR3, (value >> 3) & 0x01);
+  digitalWrite(ADR4, (value >> 4) & 0x01);
+  digitalWrite(ADR5, (value >> 5) & 0x01);
+  digitalWrite(ADR6, (value >> 6) & 0x01);
+
+}
+
+void writeHiNibble(unsigned long value)
+{
+  digitalWrite(ADR7, (value >> 0) & 0x01);
+  digitalWrite(ADR8, (value >> 1) & 0x01);
+  digitalWrite(ADR9, (value >> 2) & 0x01);
+  digitalWrite(ADR10, (value >> 3) & 0x01);
+  digitalWrite(ADR11, (value >> 4) & 0x01);
+  digitalWrite(ADR12, (value >> 5) & 0x01);
+  digitalWrite(ADR13, (value >> 6) & 0x01);
+  digitalWrite(ADR14, (value >> 7) & 0x01);
+  digitalWrite(ADR15, (value >> 8) & 0x01);
+  digitalWrite(ADR16, (value >> 9) & 0x01);
+}
+
+
+byte getHwID(int id_type)
 {
   long ADDR_1 = 0x5555;
   long ADDR_2 = 0x2AAA;
@@ -699,8 +768,8 @@ byte getChipID()
   digitalWrite(_WE, HIGH);
   delayMicroseconds(1);
 
-  setReadMode(1);
-  byte id = DigitalReadByte();
+  setReadMode(id_type);
+  byte id = digitalReadByte();
   setWriteMode();
   
   //perform the 3 byte exit program code:
@@ -839,6 +908,7 @@ void sectorErase(long address)
   delay(100);
 }
 
+//may be used for debug
 void signalsState(String str){
   String ce = digitalRead(_CE) ? "HIGH" : "LOW";
   String we = digitalRead(_WE) ? "HIGH" : "LOW";
