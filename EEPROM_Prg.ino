@@ -295,9 +295,9 @@ void cmd_erase_chip(SerialCommands* sender)
 void cmd_chip_id(SerialCommands* sender)
 {
   sender->GetSerial()->print("EEPROM Manufacturer ID: 0x");
-  sender->GetSerial()->println(getHwID(0), HEX);
+  sender->GetSerial()->println(getHwID(0L), HEX);
   sender->GetSerial()->print("EEPROM Chip ID: 0x");
-  sender->GetSerial()->println(getHwID(1), HEX);
+  sender->GetSerial()->println(getHwID(1L), HEX);
 }
 
 void cmd_dump(SerialCommands* sender)
@@ -402,7 +402,7 @@ unsigned long fileToEeprom(String fileName, unsigned long address)
   {
     Serial.println("Error reading ROM file!");
   }
-  byte chip_id = getHwID(1);
+  byte chip_id = getHwID(1L);
   Serial.print("Chip ID: 0x");
   Serial.println(chip_id, HEX);
   Serial.print("Writing to EEPROM address: 0x");
@@ -742,7 +742,7 @@ void writeHiNibble(unsigned long value)
 }
 
 
-byte getHwID(int id_type)
+byte getHwID(unsigned long id_type)
 {
   long ADDR_1 = 0x5555;
   long ADDR_2 = 0x2AAA;
