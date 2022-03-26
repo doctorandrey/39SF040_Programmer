@@ -5,6 +5,8 @@
  * SD card pinout is as provided by Arduino, on pins 51-53.
  * 
  * This version is built using the Arduino Mega 2650.
+ * 
+ * Supports programing Winbond W29C011
  */
  
 #include <SPI.h>
