@@ -35,4 +35,5 @@ ETF FIRMWARE.ROM 0x10000 0x8000   - Writes EEPROM data starting from 0x10000 and
 ![Example workflow](https://github.com/doctorandrey/39SF040_Programmer/blob/6d708868ea0c198c6b744fc6fe6072bf5909737e/EEPROM_Prg.png)
 
 Dependencies: https://github.com/ppedro74/Arduino-SerialCommands @ppedro74
+
 P.S. It is useful for programming EPROM of ZX-Spectrum :)
